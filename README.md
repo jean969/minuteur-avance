@@ -137,7 +137,7 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de 
 
 ## 👨‍💻 Auteur
 
-**Votre Nom** - [@jean969](https://github.com/jean969)
+**Yavo Jean-Pierre** - [@jean969](https://github.com/jean969)
 
 ## 🙏 Remerciements
 
