@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minuteur Avancé</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        h1 {
+            color: #444;
+            margin-bottom: 30px;
+            font-size: 2rem;
+            font-weight: 300;
+        }
+
+        #affichage {
+            font-size: 4rem;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border: 3px solid #3498db;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+        }
+
+        #affichage.running {
+            border-color: #27ae60;
+            color: #27ae60;
+            transform: scale(1.05);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        button {
+            font-size: 1.1rem;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        button:hover:before {
+            left: 100%;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.6);
+        }
+
+        .btn-start:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .btn-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.6);
+        }
+
+        .btn-stop:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.6);
+        }
+
+        .status {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .status.stopped {
+            background: #ecf0f1;
+            color: #7f8c8d;
+        }
+
+        .status.running {
+            background: #d5f4e6;
+            color: #27ae60;
+        }
+
+        .time-format {
+            font-size: 1.2rem;
+            color: #7f8c8d;
+            margin-top: 10px;
+        }
+
+        .time-config {
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 2px solid #3498db;
+            transition: all 0.3s ease;
+        }
+
+        .time-config.hidden {
+            display: none;
+        }
+
+        .time-config h3 {
+            color: #2980b9;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .time-inputs {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .input-group label {
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .input-group input {
+            width: 70px;
+            padding: 8px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .preset-btn {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .preset-btn:hover {
+            background: linear-gradient(135deg, #7f8c8d, #95a5a6);
+            transform: translateY(-1px);
+        }
+
+        .btn-config {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-config:hover {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4);
+        }
+
+        .mode-switch {
+            margin: 15px 0;
+        }
+
+        .mode-btn {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .mode-btn:hover {
+            background: linear-gradient(135deg, #8e44ad, #9b59b6);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4);
+        }
+
+        #affichage.countdown {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        #affichage.countdown.warning {
+            animation: warning-pulse 1s infinite;
+        }
+
+        @keyframes warning-pulse {
+            0% { 
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                transform: scale(1); 
+            }
+            50% { 
+                background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+                transform: scale(1.02); 
+            }
+            100% { 
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                transform: scale(1); 
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .pulse {
+            animation: pulse 1s infinite;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            #affichage {
+                font-size: 3rem;
+                padding: 20px;
+            }
+            
+            button {
+                font-size: 0.9rem;
+                padding: 10px 18px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⏱️ Minuteur Avancé</h1>
+        
+        <!-- Configuration du temps -->
+        <div class="time-config" id="timeConfig">
+            <h3>⏰ Définir le temps</h3>
+            <div class="time-inputs">
+                <div class="input-group">
+                    <label for="minutes">Minutes</label>
+                    <input type="number" id="minutes" min="0" max="99" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="seconds">Secondes</label>
+                    <input type="number" id="seconds" min="0" max="59" value="0">
+                </div>
+            </div>
+            <div class="preset-buttons">
+                <button class="preset-btn" onclick="definirPreset(60)">1 min</button>
+                <button class="preset-btn" onclick="definirPreset(300)">5 min</button>
+                <button class="preset-btn" onclick="definirPreset(600)">10 min</button>
+                <button class="preset-btn" onclick="definirPreset(900)">15 min</button>
+            </div>
+            <button class="btn-config" onclick="appliquerConfig()">✅ Appliquer</button>
+        </div>
+
+        <div id="affichage">00:00</div>
+        <div class="time-format">
+            <span id="timeType">Chronomètre</span> • mm:ss
+        </div>
+        
+        <!-- Mode Switch -->
+        <div class="mode-switch">
+            <button id="modeBtn" class="mode-btn" onclick="changerMode()">
+                🔄 Passer en mode Minuteur
+            </button>
+        </div>
+        
+        <div class="controls">
+            <button id="btnStart" class="btn-start" onclick="demarrerMinuteur()">▶️ Démarrer</button>
+            <button id="btnStop" class="btn-stop" onclick="arreterMinuteur()" disabled>⏸️ Arrêter</button>
+            <button id="btnReset" class="btn-reset" onclick="remettreAZero()">🔄 Reset</button>
+        </div>
+        
+        <div id="status" class="status stopped">Minuteur arrêté</div>
+    </div>
+
+    <script>
+        let compteur = 0;
+        let tempsInitial = 0;
+        let minuteur = null;
+        let isRunning = false;
+        let modeCountdown = false; // true = minuteur décompte, false = chronomètre
+
+        // Éléments du DOM
+        const affichage = document.getElementById('affichage');
+        const btnStart = document.getElementById('btnStart');
+        const btnStop = document.getElementById('btnStop');
+        const btnReset = document.getElementById('btnReset');
+        const status = document.getElementById('status');
+        const timeConfig = document.getElementById('timeConfig');
+        const modeBtn = document.getElementById('modeBtn');
+        const timeType = document.getElementById('timeType');
+        const minutesInput = document.getElementById('minutes');
+        const secondsInput = document.getElementById('seconds');
+
+        // Sons de notification (optionnel)
+        function jouerSon() {
+            // Créer un son simple avec Web Audio API
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        // Fonction pour afficher une notification
+        function afficherNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }
+
+        // Fonction pour changer de mode
+        function changerMode() {
+            if (isRunning) {
+                alert('Arrêtez le minuteur avant de changer de mode.');
+                return;
+            }
+
+            modeCountdown = !modeCountdown;
+            
+            if (modeCountdown) {
+                modeBtn.textContent = '🔄 Passer en mode Chronomètre';
+                timeType.textContent = 'Minuteur décompte';
+                timeConfig.classList.remove('hidden');
+                affichage.classList.add('countdown');
+            } else {
+                modeBtn.textContent = '🔄 Passer en mode Minuteur';
+                timeType.textContent = 'Chronomètre';
+                timeConfig.classList.add('hidden');
+                affichage.classList.remove('countdown', 'warning');
+            }
+            
+            remettreAZero();
+        }
+
+        // Fonction pour définir un preset
+        function definirPreset(secondes) {
+            const minutes = Math.floor(secondes / 60);
+            const secs = secondes % 60;
+            
+            minutesInput.value = minutes;
+            secondsInput.value = secs;
+        }
+
+        // Fonction pour appliquer la configuration
+        function appliquerConfig() {
+            if (isRunning) {
+                alert('Arrêtez le minuteur avant de modifier la configuration.');
+                return;
+            }
+
+            const minutes = parseInt(minutesInput.value) || 0;
+            const seconds = parseInt(secondsInput.value) || 0;
+            
+            if (minutes === 0 && seconds === 0) {
+                alert('Veuillez définir un temps supérieur à 0.');
+                return;
+            }
+
+            if (seconds > 59) {
+                alert('Les secondes ne peuvent pas dépasser 59.');
+                return;
+            }
+
+            tempsInitial = minutes * 60 + seconds;
+            compteur = tempsInitial;
+            mettreAJourAffichage();
+            mettreAJourStatut(`Temps configuré: ${formaterTemps(tempsInitial)}`);
+            
+            // Animation de confirmation
+            affichage.style.transform = 'scale(1.1)';
+            affichage.style.background = 'linear-gradient(135deg, #d5f4e6, #a8e6cf)';
+            setTimeout(() => {
+                affichage.style.transform = 'scale(1)';
+                affichage.style.background = 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)';
+            }, 300);
+        }
+
+        // Fonction pour formater le temps en mm:ss
+        function formaterTemps(secondes) {
+            const minutes = Math.floor(Math.abs(secondes) / 60);
+            const sec = Math.abs(secondes) % 60;
+            const signe = secondes < 0 ? '-' : '';
+            return `${signe}${minutes.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        // Fonction pour mettre à jour l'affichage
+        function mettreAJourAffichage() {
+            affichage.textContent = formaterTemps(compteur);
+            
+            // Effets visuels pour le mode countdown
+            if (modeCountdown && compteur <= 10 && compteur > 0) {
+                affichage.classList.add('warning');
+            } else {
+                affichage.classList.remove('warning');
+            }
+        }
+
+        // Fonction pour mettre à jour le statut
+        function mettreAJourStatut(texte, estEnMarche = false) {
+            status.textContent = texte;
+            status.className = `status ${estEnMarche ? 'running' : 'stopped'}`;
+        }
+
+        // Fonction pour mettre à jour les boutons
+        function mettreAJourBoutons() {
+            btnStart.disabled = isRunning;
+            btnStop.disabled = !isRunning;
+            
+            if (isRunning) {
+                affichage.classList.add('running', 'pulse');
+            } else {
+                affichage.classList.remove('running', 'pulse');
+            }
+        }
+
+        function demarrerMinuteur() {
+            if (isRunning) return;
+            
+            // Vérifier si on peut démarrer
+            if (modeCountdown && compteur <= 0) {
+                alert('Veuillez configurer un temps avant de démarrer le minuteur.');
+                return;
+            }
+            
+            isRunning = true;
+            minuteur = setInterval(function() {
+                if (modeCountdown) {
+                    compteur--;
+                    
+                    // Vérifier si le temps est écoulé
+                    if (compteur <= 0) {
+                        compteur = 0;
+                        mettreAJourAffichage();
+                        arreterMinuteur();
+                        afficherNotification('⏰ Temps écoulé !');
+                        jouerSon();
+                        return;
+                    }
+                } else {
+                    compteur++;
+                }
+                
+                mettreAJourAffichage();
+                
+                const typeText = modeCountdown ? 'Minuteur' : 'Chronomètre';
+                mettreAJourStatut(`${typeText} en cours... (${formaterTemps(compteur)})`, true);
+            }, 1000);
+            
+            mettreAJourBoutons();
+            const typeText = modeCountdown ? 'Minuteur' : 'Chronomètre';
+            mettreAJourStatut(`${typeText} démarré!`, true);
+            
+            // Animation de démarrage
+            affichage.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                affichage.style.transform = 'scale(1)';
+            }, 200);
+        }
+
+        function arreterMinuteur() {
+            if (!isRunning) return;
+            
+            clearInterval(minuteur);
+            minuteur = null;
+            isRunning = false;
+            
+            mettreAJourBoutons();
+            const typeText = modeCountdown ? 'Minuteur' : 'Chronomètre';
+            mettreAJourStatut(`${typeText} arrêté à ${formaterTemps(compteur)}`);
+            
+            // Animation d'arrêt
+            affichage.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                affichage.style.transform = 'scale(1)';
+            }, 200);
+        }
+
+        function remettreAZero() {
+            // Arrêter le minuteur s'il est en cours
+            if (isRunning) {
+                arreterMinuteur();
+            }
+            
+            if (modeCountdown) {
+                compteur = tempsInitial;
+            } else {
+                compteur = 0;
+            }
+            
+            mettreAJourAffichage();
+            const typeText = modeCountdown ? 'Minuteur' : 'Chronomètre';
+            mettreAJourStatut(`${typeText} remis à zéro`);
+            
+            // Animation de reset
+            affichage.style.transform = 'scale(1.2)';
+            affichage.style.background = 'linear-gradient(135deg, #fff, #e8f4f8)';
+            setTimeout(() => {
+                affichage.style.transform = 'scale(1)';
+                affichage.style.background = 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)';
+            }, 300);
+        }
+
+        // Validation des inputs
+        minutesInput.addEventListener('input', function() {
+            if (this.value > 99) this.value = 99;
+            if (this.value < 0) this.value = 0;
+        });
+
+        secondsInput.addEventListener('input', function() {
+            if (this.value > 59) this.value = 59;
+            if (this.value < 0) this.value = 0;
+        });
+
+        // Gestion des raccourcis clavier
+        document.addEventListener('keydown', function(event) {
+            switch(event.code) {
+                case 'Space':
+                    event.preventDefault();
+                    if (isRunning) {
+                        arreterMinuteur();
+                    } else {
+                        demarrerMinuteur();
+                    }
+                    break;
+                case 'KeyR':
+                    if (event.ctrlKey) {
+                        event.preventDefault();
+                        remettreAZero();
+                    }
+                    break;
+                case 'KeyM':
+                    if (event.ctrlKey) {
+                        event.preventDefault();
+                        changerMode();
+                    }
+                    break;
+                case 'Escape':
+                    if (isRunning) {
+                        arreterMinuteur();
+                    }
+                    break;
+            }
+        });
+
+        // Initialisation
+        mettreAJourAffichage();
+        mettreAJourBoutons();
+        timeConfig.classList.add('hidden'); // Masquer la config au début
+
+        // Empêcher la fermeture accidentelle si le minuteur est en cours
+        window.addEventListener('beforeunload', function(event) {
+            if (isRunning) {
+                event.preventDefault();
+                event.returnValue = 'Le minuteur est encore en cours. Êtes-vous sûr de vouloir quitter ?';
+                return event.returnValue;
+            }
+        });
+
+        // Afficher les raccourcis clavier au chargement
+        setTimeout(() => {
+            console.log('🎮 Raccourcis clavier disponibles:');
+            console.log('  • ESPACE: Démarrer/Arrêter');
+            console.log('  • CTRL+R: Reset');
+            console.log('  • CTRL+M: Changer de mode');
+            console.log('  • ÉCHAP: Arrêter');
+        }, 1000);
+    </script>
+</body>
+</html>
+Commit message: ✨ Add advanced timer with dual mode functionality
